@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Testes - App de Futebol</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Painel de Testes da API</h1>
+            <p>Use esta página para testar todas as funcionalidades do backend.</p>
+        </header>
+
+        <main>
+            <!-- SEÇÃO DE ADMIN -->
+            <section class="card admin-card">
+                <h2>Simulação de Admin</h2>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="admin-checkbox">
+                        <strong>Sou Admin</strong> (Marque para poder criar jogadores, ligas e partidas)
+                    </label>
+                </div>
+            </section>
+
+            <!-- GERENCIAR JOGADORES -->
+            <section class="card">
+                <h2>Gerenciar Jogadores</h2>
+                <form id="add-jogador-form">
+                    <div class="form-group">
+                        <label for="nome-jogador">Nome do Jogador:</label>
+                        <input type="text" id="nome-jogador" name="nome" required>
+                    </div>
+                    <button type="submit">Adicionar Jogador</button>
+                </form>
+                <div id="jogador-message-area" class="message-area"></div>
+                <div id="lista-jogadores" class="player-list"></div>
+            </section>
+
+            <!-- GERENCIAR LIGAS -->
+            <section class="card">
+                <h2>Gerenciar Ligas</h2>
+                <form id="add-liga-form">
+                    <div class="form-group"><label for="liga-nome">Nome da Liga:</label><input type="text" id="liga-nome" required></div>
+                    <div class="form-group"><label for="liga-inicio">Data Início:</label><input type="date" id="liga-inicio" required></div>
+                    <div class="form-group"><label for="liga-fim">Data Fim:</label><input type="date" id="liga-fim" required></div>
+                    <button type="submit">Criar Liga</button>
+                </form>
+                <div id="liga-message-area" class="message-area"></div>
+                <div id="lista-ligas" class="player-list"></div>
+            </section>
+
+            <!-- REGISTRAR PARTIDA -->
+            <section class="card">
+                <h2>Registrar Nova Partida</h2>
+                <form id="add-partida-form">
+                    <div class="form-group">
+                        <label for="partida-liga">Selecione a Liga:</label>
+                        <select id="partida-liga" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="partida-data">Data da Partida:</label>
+                        <input type="date" id="partida-data" required>
+                    </div>
+                    <div class="times-container">
+                        <div class="time-box">
+                            <h3>Time A</h3>
+                            <select id="jogadores-timeA" multiple></select>
+                            <div id="stats-timeA" class="stats-area"></div>
+                        </div>
+                        <div class="time-box">
+                            <h3>Time B</h3>
+                            <select id="jogadores-timeB" multiple></select>
+                            <div id="stats-timeB" class="stats-area"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Resultado:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="resultado" value="vitoriaA" required> Time A Venceu</label>
+                            <label><input type="radio" name="resultado" value="vitoriaB"> Time B Venceu</label>
+                            <label><input type="radio" name="resultado" value="empate"> Empate</label>
+                        </div>
+                    </div>
+                    <button type="submit">Salvar Partida</button>
+                </form>
+                <div id="partida-message-area" class="message-area"></div>
+            </section>
+
+            <!-- SEÇÃO DE ESTATÍSTICAS -->
+            <section class="card">
+                <h2>Visualizar Estatísticas</h2>
+                <div class="filter-container">
+                    <div class="form-group">
+                        <label for="liga-filtro">Filtrar por Liga:</label>
+                        <select id="liga-filtro">
+                            <option value="">Todas as Ligas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="stats-group">
+                    <h3>Ranking por Pontos</h3>
+                    <div id="pontos-ranking-container" class="table-container"></div>
+                </div>
+                <div class="stats-group">
+                    <h3>Confrontos Diretos</h3>
+                    <div id="confrontos-container" class="table-container"></div>
+                </div>
+                <div class="stats-group">
+                    <h3>Análise de Duplas</h3>
+                    <div id="duplas-stats-container" class="table-container"></div>
+                </div>
+                <div class="stats-group">
+                    <h3>Ranking Geral (Vitórias)</h3>
+                    <div id="ranking-geral-container" class="table-container"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
