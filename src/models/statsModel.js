@@ -2,7 +2,7 @@ import db from '../database/db.js';
 
 // Função para buscar o ranking de pontos
 const getRankingPontos = (ligaId) => {
-    const PONTOS = { GOLS: 0.6, ASSISTENCIAS: 0.3, VITORIAS: 5, EMPATES: 2.5, DERROTAS: -1, ADVERTENCIAS: -5, CLEAN_SHEET: 0.3 };
+const PONTOS = { GOLS: 0.6, ASSISTENCIAS: 0.3, VITORIAS: 5, EMPATES: 2.5, DERROTAS: -1, ADVERTENCIAS: -5, CLEAN_SHEET: 0.3, GOLS_CONTRA: -0.6 };
     let sql = `
         SELECT j.nome, j.id,
             SUM(r.vitorias) as vitorias, SUM(r.derrotas) as derrotas, SUM(r.empates) as empates,
@@ -11,6 +11,7 @@ const getRankingPontos = (ligaId) => {
                 SUM(r.gols) * ${PONTOS.GOLS} + SUM(r.assistencias) * ${PONTOS.ASSISTENCIAS} +
                 SUM(r.vitorias) * ${PONTOS.VITORIAS} + SUM(r.empates) * ${PONTOS.EMPATES} +
                 SUM(r.derrotas) * ${PONTOS.DERROTAS} + SUM(r.advertencias) * ${PONTOS.ADVERTENCIAS} +
+                SUM(r.gols_contra) * ${PONTOS.GOLS_CONTRA} +
                 SUM(CASE WHEN j.joga_recuado = 1 THEN r.sem_sofrer_gols * ${PONTOS.CLEAN_SHEET} ELSE 0 END)
             ) as total_pontos
         FROM resultados r
