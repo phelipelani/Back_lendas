@@ -338,54 +338,77 @@ export function finalizar(rodada_id) {
 
 export function getResultadosCompletos(rodada_id) {
   const PONTOS = {
-    GOLS: 0.6,
-    ASSISTENCIAS: 0.3,
-    VITORIAS: 5,
-    EMPATES: 2.5,
-    DERROTAS: -1,
-    ADVERTENCIAS: -5,
-    CLEAN_SHEET: 0.3,
+GOLS: 4.0,          // Aumentado drasticamente
+  ASSISTENCIAS: 2.5,    // Aumentado drasticamente
+  VITORIAS: 5.0,        // Mantido (ou pode ser reduzido para 4.0)
+  EMPATES: 2.0,         // Reduzido
+  DERROTAS: -1.0,       // Mantido
+  ADVERTENCIAS: -3.0,   // Penalidade um pouco menor
+  CLEAN_SHEET: 1.5,     // Bônus defensivo mais relevante
+  GOLS_CONTRA: -4.0,     // Penalidade severa, igual a anular um gol feito.
   };
-  
+
   return new Promise((resolve, reject) => {
+    // Consulta SQL reestruturada para garantir a precisão dos dados
     const sql = `
+      WITH JogadoresDaRodada AS (
+        -- 1. Primeiro, pegamos todos os jogadores da rodada e seus times
+        SELECT
+          j.id,
+          j.nome,
+          j.joga_recuado,
+          CASE rt.numero_time
+            WHEN 1 THEN 'Time Amarelo'
+            WHEN 2 THEN 'Time Preto'
+            WHEN 3 THEN 'Time Azul'
+            WHEN 4 THEN 'Time Rosa'
+            ELSE 'Sem Time'
+          END as time
+        FROM jogadores j
+        JOIN rodada_jogadores rj ON j.id = rj.jogador_id
+        LEFT JOIN rodada_times rt ON j.id = rt.jogador_id AND rj.rodada_id = rt.rodada_id
+        WHERE rj.rodada_id = ?
+      )
+      -- 2. Agora, para cada jogador, agregamos os resultados
       SELECT
-        j.nome, j.id, j.joga_recuado,
-        COALESCE(SUM(r.gols), 0) as gols,
-        COALESCE(SUM(r.assistencias), 0) as assistencias,
-        COALESCE(SUM(r.vitorias), 0) as vitorias,
-        COALESCE(SUM(r.empates), 0) as empates,
-        COALESCE(SUM(r.derrotas), 0) as derrotas,
-        COALESCE(SUM(r.advertencias), 0) as advertencias,
-        COALESCE(SUM(r.gols_contra), 0) as gols_contra,
-        COALESCE(SUM(r.sem_sofrer_gols), 0) as clean_sheets,
+        j.id,
+        j.nome,
+        j.joga_recuado,
+        j.time,
+        COALESCE(SUM(res.gols), 0) as gols,
+        COALESCE(SUM(res.assistencias), 0) as assistencias,
+        COALESCE(SUM(res.vitorias), 0) as vitorias,
+        COALESCE(SUM(res.empates), 0) as empates,
+        COALESCE(SUM(res.derrotas), 0) as derrotas,
+        COALESCE(SUM(res.advertencias), 0) as advertencias,
+        COALESCE(SUM(res.gols_contra), 0) as gols_contra,
+        COALESCE(SUM(res.sem_sofrer_gols), 0) as clean_sheets,
         (
-          COALESCE(SUM(r.gols), 0) * ${PONTOS.GOLS} + 
-          COALESCE(SUM(r.assistencias), 0) * ${PONTOS.ASSISTENCIAS} +
-          COALESCE(SUM(r.vitorias), 0) * ${PONTOS.VITORIAS} + 
-          COALESCE(SUM(r.empates), 0) * ${PONTOS.EMPATES} +
-          COALESCE(SUM(r.derrotas), 0) * ${PONTOS.DERROTAS} + 
-          COALESCE(SUM(r.advertencias), 0) * ${PONTOS.ADVERTENCIAS} +
-          COALESCE(SUM(CASE WHEN j.joga_recuado = 1 THEN r.sem_sofrer_gols * ${PONTOS.CLEAN_SHEET} ELSE 0 END), 0)
+          COALESCE(SUM(res.gols), 0) * ${PONTOS.GOLS} +
+          COALESCE(SUM(res.assistencias), 0) * ${PONTOS.ASSISTENCIAS} +
+          COALESCE(SUM(res.vitorias), 0) * ${PONTOS.VITORIAS} +
+          COALESCE(SUM(res.empates), 0) * ${PONTOS.EMPATES} +
+          COALESCE(SUM(res.derrotas), 0) * ${PONTOS.DERROTAS} +
+          COALESCE(SUM(res.advertencias), 0) * ${PONTOS.ADVERTENCIAS} +
+          COALESCE(SUM(CASE WHEN j.joga_recuado = 1 THEN res.sem_sofrer_gols * ${PONTOS.CLEAN_SHEET} ELSE 0 END), 0)
         ) as total_pontos
-      FROM resultados r
-      RIGHT JOIN jogadores j ON r.jogador_id = j.id
-      JOIN rodada_jogadores rj ON j.id = rj.jogador_id
-      JOIN partidas p ON r.partida_id = p.id
-      WHERE p.rodada_id = ? AND rj.rodada_id = ?
-      GROUP BY j.id, j.nome, j.joga_recuado
+      FROM JogadoresDaRodada j
+      LEFT JOIN partidas p ON p.rodada_id = ?
+      LEFT JOIN resultados res ON res.jogador_id = j.id AND res.partida_id = p.id
+      GROUP BY j.id, j.nome, j.joga_recuado, j.time
       ORDER BY total_pontos DESC;
     `;
-    
+
+    // A consulta agora precisa do rodada_id apenas 2 vezes
     db.all(sql, [rodada_id, rodada_id], (err, rows) => {
       if (err) {
-        console.error('[MODEL] Erro ao buscar resultados completos:', err);
+        console.error("[MODEL] Erro ao buscar resultados completos (v2):", err);
         return reject(err);
       }
-      
+
       const resultados = rows.map((row) => ({
         ...row,
-        total_pontos: parseFloat(row.total_pontos.toFixed(2)),
+        total_pontos: row.total_pontos ? parseFloat(row.total_pontos.toFixed(2)) : 0,
         gols: parseInt(row.gols || 0),
         assistencias: parseInt(row.assistencias || 0),
         vitorias: parseInt(row.vitorias || 0),
@@ -395,8 +418,9 @@ export function getResultadosCompletos(rodada_id) {
         gols_contra: parseInt(row.gols_contra || 0),
         clean_sheets: parseInt(row.clean_sheets || 0),
       }));
-      
+
       resolve(resultados);
     });
   });
 }
+
