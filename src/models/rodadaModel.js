@@ -309,8 +309,6 @@ export async function getResultadosCompletos(rodada_id) {
       GROUP BY j.id, j.nome, j.joga_recuado, j.time
       ORDER BY total_pontos DESC;
     `;
-<<<<<<< HEAD
-
     // A consulta agora precisa do rodada_id apenas 2 vezes
     db.all(sql, [rodada_id, rodada_id], (err, rows) => {
       if (err) {
