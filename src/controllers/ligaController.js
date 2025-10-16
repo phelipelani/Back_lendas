@@ -26,14 +26,17 @@ export async function createLiga(req, res) {
 }
 
 // Controller para buscar todas as ligas
-export async function getAllLigas(req, res) {
+export const getAllLigas = async (req, res) => {
     try {
+        console.log('Tentando buscar todas as ligas...');
         const ligas = await LigaModel.findAll();
+        console.log('Ligas encontradas:', ligas); // Verifique o que é retornado aqui
         res.status(200).json(ligas);
     } catch (error) {
-        res.status(500).json({ message: 'Erro no servidor ao buscar ligas.', error: error.message });
+        console.error('Erro ao buscar todas as ligas no controller:', error); // Log detalhado do erro
+        res.status(500).json({ message: 'Erro interno do servidor ao buscar ligas', error: error.message });
     }
-}
+};
 
 // Controller para buscar uma liga específica pelo ID
 export async function getLigaById(req, res) {

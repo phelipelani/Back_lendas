@@ -1,98 +1,3 @@
-// import pool from "../database/db.js";
-
-// export async function create(rodada_id) {
-//   try {
-//     const sqlRodada = `SELECT data FROM rodadas WHERE id = ?`;
-//     const [rodadas] = await pool.query(sqlRodada, [rodada_id]);
-    
-//     if (rodadas.length === 0) {
-//       throw new Error(`Rodada com ID ${rodada_id} não encontrada.`);
-//     }
-
-//     const dataDaRodada = rodadas[0].data;
-//     const sqlInsert = `INSERT INTO partidas (rodada_id, data) VALUES (?, ?)`;
-//     const [result] = await pool.query(sqlInsert, [rodada_id, dataDaRodada]);
-    
-//     return { id: result.insertId, rodada_id };
-//   } catch (error) {
-//     console.error("Erro ao criar partida:", error);
-//     throw error;
-//   }
-// }
-
-// export async function updateResultados(partida_id, data) {
-//   const { placar1, placar2, duracao, time1, time2, time1_numero, time2_numero } = data;
-//   let connection;
-
-//   try {
-//     connection = await pool.getConnection();
-//     await connection.beginTransaction();
-
-//     const sqlPartida = `UPDATE partidas SET placar_time1 = ?, placar_time2 = ?, duracao_segundos = ?, time1_numero = ?, time2_numero = ? WHERE id = ?`;
-//     await connection.query(sqlPartida, [placar1, placar2, duracao, time1_numero, time2_numero, partida_id]);
-
-//     await connection.query(`DELETE FROM resultados WHERE partida_id = ?`, [partida_id]);
-
-//     const sqlResultado = `INSERT INTO resultados (partida_id, jogador_id, time, gols, assistencias, vitorias, derrotas, empates, advertencias, sem_sofrer_gols) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    
-//     const vitoriaTime1 = placar1 > placar2 ? 1 : 0;
-//     const vitoriaTime2 = placar2 > placar1 ? 1 : 0;
-//     const empate = placar1 === placar2 ? 1 : 0;
-//     const cleanSheet1 = placar2 === 0 ? 1 : 0;
-//     const cleanSheet2 = placar1 === 0 ? 1 : 0;
-
-//     for (const jogador of time1) {
-//       await connection.query(sqlResultado, [partida_id, jogador.id, "Time 1", jogador.gols, jogador.assistencias, vitoriaTime1, vitoriaTime2, empate, 0, cleanSheet1]);
-//     }
-//     for (const jogador of time2) {
-//       await connection.query(sqlResultado, [partida_id, jogador.id, "Time 2", jogador.gols, jogador.assistencias, vitoriaTime2, vitoriaTime1, empate, 0, cleanSheet2]);
-//     }
-
-//     await connection.commit();
-//     return { message: "Resultados da partida salvos com sucesso." };
-//   } catch (error) {
-//     if (connection) await connection.rollback();
-//     console.error("Erro ao atualizar resultados da partida:", error);
-//     throw error;
-//   } finally {
-//     if (connection) connection.release();
-//   }
-// }
-
-// export async function registrarGolContra(partida_id, jogador_id, time_marcou_ponto, time_do_jogador_numero) {
-//     let connection;
-//     try {
-//         connection = await pool.getConnection();
-//         await connection.beginTransaction();
-
-//         const placarField = time_marcou_ponto === 1 ? 'placar_time1' : 'placar_time2';
-//         const sqlUpdatePlacar = `UPDATE partidas SET ${placarField} = ${placarField} + 1 WHERE id = ?`;
-//         await connection.query(sqlUpdatePlacar, [partida_id]);
-
-//         const sqlFind = `SELECT id FROM resultados WHERE partida_id = ? AND jogador_id = ?`;
-//         const [rows] = await connection.query(sqlFind, [partida_id, jogador_id]);
-
-//         if (rows.length > 0) {
-//             const row = rows[0];
-//             const sqlUpdateJogador = `UPDATE resultados SET gols_contra = gols_contra + 1 WHERE id = ?`;
-//             await connection.query(sqlUpdateJogador, [row.id]);
-//         } else {
-//             const timeString = `Time ${time_do_jogador_numero}`;
-//             const sqlInsertJogador = `INSERT INTO resultados (partida_id, jogador_id, time, gols_contra) VALUES (?, ?, ?, 1)`;
-//             await connection.query(sqlInsertJogador, [partida_id, jogador_id, timeString]);
-//         }
-        
-//         await connection.commit();
-//         return { message: "Gol contra registrado com sucesso." };
-//     } catch (error) {
-//         if (connection) await connection.rollback();
-//         console.error("Erro ao registrar gol contra:", error);
-//         throw error;
-//     } finally {
-//         if (connection) connection.release();
-//     }
-// }
-
 import db from "../database/db.js";
 
 export function create(rodada_id) {
@@ -207,3 +112,108 @@ export function registrarGolContra(partida_id, jogador_id, time_marcou_ponto) {
         });
     });
 }
+
+// import dbClient from '../lib/turso.js';
+
+// export async function create(rodada_id) {
+//   try {
+//     const sqlRodada = `SELECT data FROM rodadas WHERE id = ?`;
+//     const resultRodada = await dbClient.execute({ sql: sqlRodada, args: [rodada_id] });
+    
+//     if (resultRodada.rows.length === 0) {
+//       throw new Error(`Rodada com ID ${rodada_id} não encontrada.`);
+//     }
+
+//     const dataDaRodada = resultRodada.rows[0].data;
+//     const sqlInsert = `INSERT INTO partidas (rodada_id, data) VALUES (?, ?)`;
+//     const resultInsert = await dbClient.execute({ sql: sqlInsert, args: [rodada_id, dataDaRodada] });
+    
+//     return { id: Number(resultInsert.lastInsertRowid), rodada_id };
+//   } catch (error) {
+//     console.error("Erro ao criar partida:", error);
+//     throw error;
+//   }
+// }
+
+// export async function updateResultados(partida_id, data) {
+//   const { placar1, placar2, duracao, time1, time2, time1_numero, time2_numero } = data;
+//   const tx = await dbClient.transaction('write');
+
+//   try {
+//     await tx.execute({
+//       sql: `UPDATE partidas SET placar_time1 = ?, placar_time2 = ?, duracao_segundos = ?, time1_numero = ?, time2_numero = ? WHERE id = ?`,
+//       args: [placar1, placar2, duracao, time1_numero, time2_numero, partida_id]
+//     });
+
+//     await tx.execute({
+//       sql: `DELETE FROM resultados WHERE partida_id = ?`,
+//       args: [partida_id]
+//     });
+    
+//     const vitoriaTime1 = placar1 > placar2 ? 1 : 0;
+//     const derrotaTime1 = placar1 < placar2 ? 1 : 0;
+//     const vitoriaTime2 = placar2 > placar1 ? 1 : 0;
+//     const derrotaTime2 = placar2 < placar1 ? 1 : 0;
+//     const empate = placar1 === placar2 ? 1 : 0;
+//     const cleanSheet1 = placar2 === 0 ? 1 : 0;
+//     const cleanSheet2 = placar1 === 0 ? 1 : 0;
+
+//     const statements = [];
+//     for (const jogador of time1) {
+//       statements.push({
+//         sql: `INSERT INTO resultados (partida_id, jogador_id, time, gols, assistencias, vitorias, derrotas, empates, advertencias, sem_sofrer_gols, gols_contra) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+//         args: [partida_id, jogador.id, "Time 1", jogador.gols, jogador.assistencias, vitoriaTime1, derrotaTime1, empate, 0, cleanSheet1]
+//       });
+//     }
+//     for (const jogador of time2) {
+//       statements.push({
+//         sql: `INSERT INTO resultados (partida_id, jogador_id, time, gols, assistencias, vitorias, derrotas, empates, advertencias, sem_sofrer_gols, gols_contra) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+//         args: [partida_id, jogador.id, "Time 2", jogador.gols, jogador.assistencias, vitoriaTime2, derrotaTime2, empate, 0, cleanSheet2]
+//       });
+//     }
+
+//     if (statements.length > 0) {
+//         await tx.batch(statements);
+//     }
+    
+//     await tx.commit();
+//     return { message: "Resultados da partida salvos com sucesso." };
+//   } catch (error) {
+//     await tx.rollback();
+//     console.error("Erro ao atualizar resultados da partida:", error);
+//     throw error;
+//   }
+// }
+
+// export async function registrarGolContra(partida_id, jogador_id, time_marcou_ponto) {
+//     const tx = await dbClient.transaction('write');
+//     try {
+//         const placarField = time_marcou_ponto === 1 ? 'placar_time1' : 'placar_time2';
+//         await tx.execute({
+//           sql: `UPDATE partidas SET ${placarField} = ${placarField} + 1 WHERE id = ?`,
+//           args: [partida_id]
+//         });
+
+//         const findResult = await tx.execute({
+//           sql: `SELECT id FROM resultados WHERE partida_id = ? AND jogador_id = ?`,
+//           args: [partida_id, jogador_id]
+//         });
+
+//         if (findResult.rows.length > 0) {
+//             const row = findResult.rows[0];
+//             await tx.execute({
+//               sql: `UPDATE resultados SET gols_contra = gols_contra + 1 WHERE id = ?`,
+//               args: [row.id]
+//             });
+//         } 
+//         // Se o jogador não estiver na partida (o que seria estranho), a lógica atual não insere um novo registro.
+//         // Isso pode ser ajustado se necessário, mas geralmente um gol contra é de alguém que já está jogando.
+        
+//         await tx.commit();
+//         return { message: "Gol contra registrado com sucesso." };
+//     } catch (error) {
+//         await tx.rollback();
+//         console.error("Erro ao registrar gol contra:", error);
+//         throw error;
+//     }
+// }
